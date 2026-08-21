@@ -14,6 +14,7 @@ manifest_name="bookmanager-supertonic-3-${short_revision}.manifest.json"
 checksum_name="${archive_name}.sha256"
 
 mkdir -p "$package_dir" "$output_dir"
+output_dir="$(cd "$output_dir" && pwd)"
 
 while IFS=$'\t' read -r bundle_path expected_size expected_sha256; do
     source_path="$bundle_path"
