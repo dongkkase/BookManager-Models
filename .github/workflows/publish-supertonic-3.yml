@@ -1,0 +1,51 @@
+name: Publish Supertonic 3 model bundle
+
+on:
+    workflow_dispatch:
+    push:
+        paths:
+            - ".github/workflows/publish-supertonic-3.yml"
+            - "manifests/supertonic-3-724fb5a.json"
+            - "releases/supertonic-3-724fb5a.md"
+            - "scripts/build-supertonic-3-release.sh"
+
+permissions:
+    contents: write
+
+concurrency:
+    group: publish-supertonic-3-724fb5a
+    cancel-in-progress: false
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - name: Check out repository
+              uses: actions/checkout@v4
+
+            - name: Build and verify bundle
+              run: bash scripts/build-supertonic-3-release.sh dist
+
+            - name: Create or update release
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  set -euo pipefail
+                  tag="supertonic-3-724fb5a"
+                  title="Supertonic 3 model assets (724fb5a)"
+                  notes="releases/supertonic-3-724fb5a.md"
+                  assets=(
+                      "dist/bookmanager-supertonic-3-724fb5a.zip"
+                      "dist/bookmanager-supertonic-3-724fb5a.zip.sha256"
+                      "dist/bookmanager-supertonic-3-724fb5a.manifest.json"
+                  )
+
+                  if gh release view "$tag" >/dev/null 2>&1; then
+                      gh release edit "$tag" --title "$title" --notes-file "$notes"
+                      gh release upload "$tag" "${assets[@]}" --clobber
+                  else
+                      gh release create "$tag" "${assets[@]}" \
+                          --target "$GITHUB_SHA" \
+                          --title "$title" \
+                          --notes-file "$notes"
